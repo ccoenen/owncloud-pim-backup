@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'mysql2'
+require 'fileutils'
+require 'yaml'
+
+
+config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), 'config.yml'))
+
+VCFS_DIR = config["directories"]["contacts"] || './contacts'
+
+FileUtils.mkdir_p VCFS_DIR
+
+client = Mysql2::Client.new(
+  host: config["database"]["host"],
+  username: config["database"]["username"],
+  password: config["database"]["password"]
+)
+
+Dir.chdir(VCFS_DIR) do
+  FileUtils.rm(Dir.glob('*'))
+
+  config["addressbook_ids"].each do |addressbook_id|
+    rows = client.query "SELECT fullname, uri, carddata FROM #{config["database"]["database"]}.#{config["database"]["table"]} WHERE addressbookid = #{addressbook_id};"
+    rows.each do |row|
+      File.open("#{row['fullname']} - #{row['uri']}", 'wb') do |outfile|
+        outfile << row["carddata"]
+      end
+    end
+  end
+
+  `git add -A`
+  `git diff --cached --exit-code`
+  if ($?.exitstatus != 0)  
+    `git commit -m "autocommit"`
+     puts `git diff HEAD^..HEAD --stat`
+     puts "\n\n"
+     puts `git show HEAD`
+  else
+    puts "no changes detected"
+  end
+end
+

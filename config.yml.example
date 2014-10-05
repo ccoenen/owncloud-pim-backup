@@ -1,0 +1,13 @@
+database:
+  host: localhost
+  username: root
+  password: letmein
+  database: owncloud
+  table: oc_contacts_cards
+addressbook_ids:
+  - 1
+  - 3
+directories:
+  contacts: ./contacts
+  events: ./events
+
