@@ -43,3 +43,6 @@ To specify a subject line, i have a slightly more complicated crontab:
     # Don't forget to add your email address at the very end!
     0 4 * * * bash -l -c 'cd your-owncloud-pim-clone; ./owncloud-pim-backup | mail -a "Content-Type: text/plain; charset=UTF-8" -s "OwnCloud PIM Change Summary" notify-me@example.com'
 
+## free software
+
+This is free software, released under MIT License. Use at your own risk.
