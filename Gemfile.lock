@@ -1,10 +1,12 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    facets (2.9.3)
     mysql2 (0.3.16)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  facets
   mysql2

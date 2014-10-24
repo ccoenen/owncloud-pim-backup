@@ -2,14 +2,28 @@
 require 'rubygems'
 require 'mysql2'
 require 'fileutils'
+require 'facets/file/sanitize'
 require 'yaml'
 
 
 config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), 'config.yml'))
 
 VCFS_DIR = config["directories"]["contacts"] || './contacts'
+ICS_DIR = config["directories"]["calendar"] || './calendar'
 
 FileUtils.mkdir_p VCFS_DIR
+FileUtils.mkdir_p ICS_DIR
+
+def full_autocommit message='autocommit'
+  `git add -A`
+  `git diff --cached --exit-code`
+  if ($?.exitstatus != 0)
+    `git commit -m "#{message}"`
+    puts `git diff HEAD^..HEAD --stat`
+    puts "\n\n"
+    puts `git show HEAD`
+  end
+end
 
 client = Mysql2::Client.new(
   host: config["database"]["host"],
@@ -21,23 +35,29 @@ Dir.chdir(VCFS_DIR) do
   FileUtils.rm(Dir.glob('*'))
 
   config["addressbook_ids"].each do |addressbook_id|
-    rows = client.query "SELECT fullname, uri, carddata FROM #{config["database"]["database"]}.#{config["database"]["table"]} WHERE addressbookid = #{addressbook_id};"
+    rows = client.query "SELECT fullname, uri, carddata FROM #{config["database"]["database"]}.#{config["database"]["contacts_table"]} WHERE addressbookid = #{addressbook_id};"
     rows.each do |row|
-      File.open("#{row['fullname']} - #{row['uri']}", 'wb') do |outfile|
+      File.open(File.sanitize("#{row['fullname']} - #{row['uri']}"), 'wb') do |outfile|
         outfile << row["carddata"]
       end
     end
   end
 
-  `git add -A`
-  `git diff --cached --exit-code`
-  if ($?.exitstatus != 0)  
-    `git commit -m "autocommit"`
-     puts `git diff HEAD^..HEAD --stat`
-     puts "\n\n"
-     puts `git show HEAD`
-  else
-    puts "no changes detected"
+  full_autocommit
+end
+
+Dir.chdir(ICS_DIR) do
+  FileUtils.rm(Dir.glob('*'))
+
+  config["calendar_ids"].each do |cal_id|
+    rows = client.query "SELECT summary, uri, calendardata FROM #{config["database"]["database"]}.#{config["database"]["calendar_table"]} WHERE calendarid = #{cal_id};"
+    rows.each do |row|
+      File.open(File.sanitize("#{row['summary']} - #{row['uri']}"), 'wb') do |outfile|
+        outfile << row["calendardata"]
+      end
+    end
   end
+
+  full_autocommit
 end
 

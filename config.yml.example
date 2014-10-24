@@ -3,11 +3,14 @@ database:
   username: root
   password: letmein
   database: owncloud
-  table: oc_contacts_cards
+  contacts_table: oc_contacts_cards
+  calendar_table: oc_clndr_objects
 addressbook_ids:
   - 1
   - 3
+calendar_ids:
+  - 4
+  - 17
 directories:
   contacts: ./contacts
-  events: ./events
-
+  calendar: ./calendar
