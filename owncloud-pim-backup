@@ -25,6 +25,10 @@ def full_autocommit message='autocommit'
   end
 end
 
+def sanitize name
+  out = File.sanitize("#{name.gsub(/[,&%\\\/]/, '_')}").gsub(/_+/, '_')
+end
+
 client = Mysql2::Client.new(
   host: config["database"]["host"],
   username: config["database"]["username"],
@@ -37,7 +41,7 @@ Dir.chdir(VCFS_DIR) do
   config["addressbook_ids"].each do |addressbook_id|
     rows = client.query "SELECT fullname, uri, carddata FROM #{config["database"]["database"]}.#{config["database"]["contacts_table"]} WHERE addressbookid = #{addressbook_id};"
     rows.each do |row|
-      File.open(File.sanitize("#{row['fullname']} - #{row['uri']}"), 'wb') do |outfile|
+      File.open(sanitize("#{row['fullname']} - #{row['uri']}"), 'wb') do |outfile|
         outfile << row["carddata"]
       end
     end
@@ -52,7 +56,7 @@ Dir.chdir(ICS_DIR) do
   config["calendar_ids"].each do |cal_id|
     rows = client.query "SELECT summary, uri, calendardata FROM #{config["database"]["database"]}.#{config["database"]["calendar_table"]} WHERE calendarid = #{cal_id};"
     rows.each do |row|
-      File.open(File.sanitize("#{row['summary']} - #{row['uri']}"), 'wb') do |outfile|
+      File.open(sanitize("#{row['summary']} - #{row['uri']}"), 'wb') do |outfile|
         outfile << row["calendardata"]
       end
     end
