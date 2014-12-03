@@ -36,7 +36,7 @@ client = Mysql2::Client.new(
 )
 
 Dir.chdir(VCFS_DIR) do
-  FileUtils.rm(Dir.glob('*'))
+  FileUtils.rm_r(Dir.glob('*'))
 
   config["addressbook_ids"].each do |addressbook_id|
     rows = client.query "SELECT fullname, uri, carddata FROM #{config["database"]["database"]}.#{config["database"]["contacts_table"]} WHERE addressbookid = #{addressbook_id};"
@@ -51,12 +51,14 @@ Dir.chdir(VCFS_DIR) do
 end
 
 Dir.chdir(ICS_DIR) do
-  FileUtils.rm(Dir.glob('*'))
+  FileUtils.rm_r(Dir.glob('*'))
 
   config["calendar_ids"].each do |cal_id|
-    rows = client.query "SELECT summary, uri, calendardata FROM #{config["database"]["database"]}.#{config["database"]["calendar_table"]} WHERE calendarid = #{cal_id};"
+    rows = client.query "SELECT summary, uri, calendardata, startdate FROM #{config["database"]["database"]}.#{config["database"]["calendar_table"]} WHERE calendarid = #{cal_id};"
     rows.each do |row|
-      File.open(sanitize("#{row['summary']} - #{row['uri']}"), 'wb') do |outfile|
+      year = row['startdate'].strftime('%Y')
+      FileUtils.mkdir(year) unless File.exist? year
+      File.open(File.join(year, sanitize("#{row['startdate'].strftime('%F')} #{row['summary']} - #{row['uri']}")), 'wb') do |outfile|
         outfile << row["calendardata"]
       end
     end
