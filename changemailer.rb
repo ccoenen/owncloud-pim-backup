@@ -1,11 +1,22 @@
 require 'rugged'
 require 'mail'
 require 'mustache'
+require 'yaml'
+
+config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), 'config.yml'))
 
 mail_template =<<EOT
 <html>
 <head>
   <style>
+    table.diff {
+      width: 100%;
+      border-bottom: 1px solid rgb(200, 200, 200);
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 12pt;
+    }
     ins {
       color: rgb(0, 70, 0);
       background-color: rgb(240, 255, 250);
@@ -14,27 +25,25 @@ mail_template =<<EOT
       color: rgb(70, 0, 0);
       background-color: rgb(255, 240, 250);
     }
-    th {
-      text-align: left;
-      border-top: 1px solid rgb(220, 220, 220);
-    }
   </style>
 </head>
 <body>
-  <table>
   {{{body}}}
-  </table>
 </body>
 </html>
 EOT
 
 change_template =<<EOT
-    <tr><th colspan="3">{{status}}: {{filename}}</th></tr>
-    <tr>
-      <td width="33%"><pre>{{left}}</pre></td>
-      <td width="33%"><pre>{{right}}</pre></td>
-      <td width="33%"><pre>{{{patch}}}</pre></td>
-    </tr>
+  <div class="patch">
+    <h1>{{status}}: {{{filename}}}</h1>
+    <table class="diff">
+      <tr>
+        <td width="33%"><pre>{{left}}</pre></td>
+        <td width="33%"><pre>{{right}}</pre></td>
+        <td width="33%"><pre>{{{patch}}}</pre></td>
+      </tr>
+    </table>
+  </div>
 EOT
 
 
@@ -66,7 +75,7 @@ html_chunks = diff.patches.map do |patch|
 
   data = {
     status: delta.status,
-    filename: delta.old_file[:path] == delta.new_file[:path] ? delta.new_file[:path] : "#{delta.new_file[:path]} => #{delta.new_file[:path]}",
+    filename: delta.old_file[:path] == delta.new_file[:path] ? delta.new_file[:path] : "<br>old: #{delta.old_file[:path]}<br>new: #{delta.new_file[:path]}",
     left: left,
     right: right,
     patch: patch.flatten!.join
@@ -77,8 +86,8 @@ end
 
 
 mail = Mail.new do
-  from     'test@example.com'
-  to       'test@example.com'
+  from     config["mailer"]["from"]
+  to       config["mailer"]["to"]
   subject  "#{diff.deltas.length} items changed"
 
   text_part do

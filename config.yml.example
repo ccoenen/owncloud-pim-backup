@@ -14,3 +14,8 @@ calendar_ids:
 directories:
   contacts: ./contacts
   calendar: ./calendar
+mailer:
+  from: change-mailer@example.com
+  to:
+    - recipient@example.com
+    - recipient2@example.com
