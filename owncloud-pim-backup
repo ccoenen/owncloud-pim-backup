@@ -17,12 +17,11 @@ FileUtils.mkdir_p ICS_DIR
 def full_autocommit message='autocommit'
   `git add -A`
   `git diff --cached --exit-code`
-  if ($?.exitstatus != 0)
-    `git commit -m "#{message}"`
-    puts `git diff HEAD^..HEAD --stat`
-    puts "\n\n"
-    puts `git show HEAD`
+  has_changes = $?.exitstatus != 0
+  if has_changes
+    system "git commit -m \"#{message}\""
   end
+  has_changes
 end
 
 def sanitize name
@@ -34,6 +33,8 @@ client = Mysql2::Client.new(
   username: config["database"]["username"],
   password: config["database"]["password"]
 )
+
+send_mail = false
 
 Dir.chdir(VCFS_DIR) do
   FileUtils.rm_r(Dir.glob('*'))
@@ -47,8 +48,10 @@ Dir.chdir(VCFS_DIR) do
     end
   end
 
-  full_autocommit
+  send_mail = full_autocommit
 end
+system "bundle exec ruby changemailer.rb \"#{VCFS_DIR}\"" if send_mail
+
 
 Dir.chdir(ICS_DIR) do
   FileUtils.rm_r(Dir.glob('*'))
@@ -64,6 +67,7 @@ Dir.chdir(ICS_DIR) do
     end
   end
 
-  full_autocommit
+  send_mail = full_autocommit
 end
+system "bundle exec ruby changemailer.rb \"#{ICS_DIR}\"" if send_mail
 

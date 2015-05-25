@@ -4,6 +4,7 @@ require 'mustache'
 require 'yaml'
 
 config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), 'config.yml'))
+directory = ARGV[0]
 
 html_mail_template =<<EOT
 <html>
@@ -52,7 +53,7 @@ Changes to the following items:
 EOT
 
 
-repo = Rugged::Repository.new('calendar')
+repo = Rugged::Repository.new(directory)
 head_commit = repo.head.target
 diff = head_commit.parents[0].diff(head_commit)
 diff.find_similar!(renames: true)
@@ -91,7 +92,7 @@ end
 mail = Mail.new do
   from     config["mailer"]["from"]
   to       config["mailer"]["to"]
-  subject  "#{diff.deltas.length} items changed"
+  subject  "#{diff.deltas.length} items changed in #{directory}"
 end
 mail.part :content_type => 'multipart/alternative' do |p|
   p.text_part = Mail::Part.new do

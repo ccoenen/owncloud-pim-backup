@@ -2,11 +2,19 @@ GEM
   remote: https://rubygems.org/
   specs:
     facets (2.9.3)
+    mail (2.6.3)
+      mime-types (>= 1.16, < 3)
+    mime-types (2.5)
+    mustache (0.99.6)
     mysql2 (0.3.16)
+    rugged (0.22.2)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   facets
+  mail
+  mustache (= 0.99.6)
   mysql2
+  rugged
