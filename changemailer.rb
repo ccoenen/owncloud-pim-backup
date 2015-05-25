@@ -89,18 +89,19 @@ mail = Mail.new do
   from     config["mailer"]["from"]
   to       config["mailer"]["to"]
   subject  "#{diff.deltas.length} items changed"
-
-  text_part do
+end
+mail.part :content_type => 'multipart/alternative' do |p|
+  p.text_part = Mail::Part.new do
     body diff.patch
   end
 
-  html_part do
+  p.html_part = Mail::Part.new do
     content_type 'text/html; charset=UTF-8'
     body Mustache.render(mail_template, {body: html_chunks.join})
   end
-
-  add_file :filename => 'changes.txt', :content => diff.patch
 end
+mail.attachments['changes.diff'] = {content: diff.patch, mime_type: 'text/x-diff'}
+
 
 mail.delivery_method :sendmail
 
