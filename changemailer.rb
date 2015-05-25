@@ -5,7 +5,7 @@ require 'yaml'
 
 config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), 'config.yml'))
 
-mail_template =<<EOT
+html_mail_template =<<EOT
 <html>
 <head>
   <style>
@@ -28,14 +28,9 @@ mail_template =<<EOT
   </style>
 </head>
 <body>
-  {{{body}}}
-</body>
-</html>
-EOT
-
-change_template =<<EOT
+  {{#changes}}
   <div class="patch">
-    <h1>{{status}}: {{{filename}}}</h1>
+    <h1>{{status}}: {{old_filename}}{{#new_filename}}<br>to {{.}}{{/new_filename}}</h1>
     <table class="diff">
       <tr>
         <td width="33%"><pre>{{left}}</pre></td>
@@ -44,8 +39,17 @@ change_template =<<EOT
       </tr>
     </table>
   </div>
+  {{/changes}}
+</body>
+</html>
 EOT
 
+text_mail_template =<<EOT
+Changes to the following items:
+{{#changes}}
+- {{status}} {{old_filename}}{{#new_filename}} => {{.}}{{/new_filename}}
+{{/changes}}
+EOT
 
 
 repo = Rugged::Repository.new('calendar')
@@ -54,7 +58,7 @@ diff = head_commit.parents[0].diff(head_commit)
 diff.find_similar!(renames: true)
 
 
-html_chunks = diff.patches.map do |patch|
+changes = diff.patches.map do |patch|
   delta = patch.delta
   left = repo.lookup(delta.old_file[:oid]).read_raw.data rescue ""
   right = repo.lookup(delta.new_file[:oid]).read_raw.data rescue ""
@@ -73,15 +77,14 @@ html_chunks = diff.patches.map do |patch|
     [h.header, lines]
   end
 
-  data = {
+  {
     status: delta.status,
-    filename: delta.old_file[:path] == delta.new_file[:path] ? delta.new_file[:path] : "<br>old: #{delta.old_file[:path]}<br>new: #{delta.new_file[:path]}",
+    old_filename: delta.old_file[:path],
+    new_filename: delta.old_file[:path] != delta.new_file[:path] ? delta.new_file[:path] : nil,
     left: left,
     right: right,
     patch: patch.flatten!.join
   }
-
-  Mustache.render(change_template, data)
 end
 
 
@@ -92,12 +95,13 @@ mail = Mail.new do
 end
 mail.part :content_type => 'multipart/alternative' do |p|
   p.text_part = Mail::Part.new do
-    body diff.patch
+    content_type 'text/plain; charset="UTF-8'
+    body Mustache.render(text_mail_template, {changes: changes})
   end
 
   p.html_part = Mail::Part.new do
     content_type 'text/html; charset=UTF-8'
-    body Mustache.render(mail_template, {body: html_chunks.join})
+    body Mustache.render(html_mail_template, {changes: changes})
   end
 end
 mail.attachments['changes.diff'] = {content: diff.patch, mime_type: 'text/x-diff'}
