@@ -84,7 +84,7 @@ changes = diff.patches.map do |patch|
     new_filename: delta.old_file[:path] != delta.new_file[:path] ? delta.new_file[:path] : nil,
     left: left,
     right: right,
-    patch: patch.flatten!.join
+    patch: patch.flatten.join
   }
 end
 

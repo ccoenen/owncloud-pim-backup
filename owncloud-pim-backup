@@ -40,7 +40,7 @@ Dir.chdir(VCFS_DIR) do
   FileUtils.rm_r(Dir.glob('*'))
 
   config["addressbook_ids"].each do |addressbook_id|
-    rows = client.query "SELECT fullname, uri, carddata FROM #{config["database"]["database"]}.#{config["database"]["contacts_table"]} WHERE addressbookid = #{addressbook_id};"
+    rows = client.query "SELECT uri, carddata, value AS fullname from #{config["database"]["database"]}.oc_cards, #{config["database"]["database"]}.oc_cards_properties WHERE oc_cards.id = oc_cards_properties.cardid AND name = 'FN' AND oc_cards.addressbookid = #{addressbook_id};"
     rows.each do |row|
       File.open(sanitize("#{row['fullname']} - #{row['uri']}"), 'wb') do |outfile|
         outfile << row["carddata"]
@@ -57,11 +57,12 @@ Dir.chdir(ICS_DIR) do
   FileUtils.rm_r(Dir.glob('*'))
 
   config["calendar_ids"].each do |cal_id|
-    rows = client.query "SELECT summary, uri, calendardata, startdate FROM #{config["database"]["database"]}.#{config["database"]["calendar_table"]} WHERE calendarid = #{cal_id};"
+    rows = client.query "SELECT uri, calendardata, firstoccurence FROM #{config["database"]["database"]}.#{config["database"]["calendar_table"]} WHERE calendarid = #{cal_id} AND componenttype = 'VEVENT';"
     rows.each do |row|
-      year = row['startdate'].strftime('%Y')
+      time = Time.at(row['firstoccurence'])
+      year = time.strftime('%Y')
       FileUtils.mkdir(year) unless File.exist? year
-      File.open(File.join(year, sanitize("#{row['startdate'].strftime('%F')} #{row['summary']} - #{row['uri']}")), 'wb') do |outfile|
+      File.open(File.join(year, sanitize("#{time.strftime('%F')} #{row['summary']} - #{row['uri']}")), 'wb') do |outfile|
         outfile << row["calendardata"]
       end
     end
