@@ -3,8 +3,9 @@ database:
   username: root
   password: letmein
   database: owncloud
-  contacts_table: oc_contacts_cards
-  calendar_table: oc_clndr_objects
+  cards_table: oc_cards
+  cards_properties_table: oc_cards_properties
+  calendar_table: oc_calendarobjects
 addressbook_ids:
   - 1
   - 3

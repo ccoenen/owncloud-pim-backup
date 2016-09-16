@@ -40,7 +40,7 @@ Dir.chdir(VCFS_DIR) do
   FileUtils.rm_r(Dir.glob('*'))
 
   config["addressbook_ids"].each do |addressbook_id|
-    rows = client.query "SELECT uri, carddata, value AS fullname from #{config["database"]["database"]}.oc_cards, #{config["database"]["database"]}.oc_cards_properties WHERE oc_cards.id = oc_cards_properties.cardid AND name = 'FN' AND oc_cards.addressbookid = #{addressbook_id};"
+    rows = client.query "SELECT uri, carddata, value AS fullname from #{config["database"]["database"]}.#{config["database"]["cards_table"]}, #{config["database"]["database"]}.#{config["database"]["cards_properties_table"]} WHERE oc_cards.id = oc_cards_properties.cardid AND name = 'FN' AND oc_cards.addressbookid = #{addressbook_id};"
     rows.each do |row|
       File.open(sanitize("#{row['fullname']} - #{row['uri']}"), 'wb') do |outfile|
         outfile << row["carddata"]
