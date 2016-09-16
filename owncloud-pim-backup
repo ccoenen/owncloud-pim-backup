@@ -61,8 +61,16 @@ Dir.chdir(ICS_DIR) do
     rows.each do |row|
       time = Time.at(row['firstoccurence'])
       year = time.strftime('%Y')
+      summary = "no summary"
+      row['calendardata'].lines.each do |line|
+        match = /\ASUMMARY:\s*(.+)\Z/i.match(line)
+        if match
+          summary = match[1].strip
+          break
+        end
+      end
       FileUtils.mkdir(year) unless File.exist? year
-      File.open(File.join(year, sanitize("#{time.strftime('%F')} #{row['summary']} - #{row['uri']}")), 'wb') do |outfile|
+      File.open(File.join(year, sanitize("#{time.strftime('%F')} #{summary} - #{row['uri']}")), 'wb') do |outfile|
         outfile << row["calendardata"]
       end
     end
