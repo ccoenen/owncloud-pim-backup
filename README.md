@@ -1,3 +1,7 @@
+# DISCONTINUED
+
+This works nicely, but I'm not going to make many more changes here. I'm attempting a PHP-Rewrite in form of a Nextcloud App over here: https://github.com/ccoenen/nextcloud-gitexport
+
 # Owncloud PIM Backup
 
 Backup tool to export your owncloud contacts to vcf-files, storing them in a git-controlled directory.
