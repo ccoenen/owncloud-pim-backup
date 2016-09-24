@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'time'
 require 'rubygems'
 require 'mysql2'
 require 'fileutils'
@@ -9,6 +10,7 @@ require 'yaml'
 config = YAML::load_file(File.join(File.dirname(File.expand_path(__FILE__)), 'config.yml'))
 
 VCFS_DIR = config["directories"]["contacts"] || './contacts'
+VTODO_DIR = config["directories"]["todos"] || './todos'
 ICS_DIR = config["directories"]["calendar"] || './calendar'
 
 FileUtils.mkdir_p VCFS_DIR
@@ -80,3 +82,38 @@ Dir.chdir(ICS_DIR) do
 end
 system "bundle exec ruby changemailer.rb \"#{ICS_DIR}\"" if send_mail
 
+Dir.chdir(VTODO_DIR) do
+  FileUtils.rm_r(Dir.glob('*'))
+
+  config["calendar_ids"].each do |cal_id|
+    rows = client.query "SELECT uri, calendardata, lastmodified FROM #{config["database"]["database"]}.#{config["database"]["calendar_table"]} WHERE calendarid = #{cal_id} AND componenttype = 'VTODO';"
+    rows.each do |row|
+      defaulttime = Time.at(row['lastmodified'])
+      completed = created = nil
+      summary = "no summary"
+      row['calendardata'].lines.each do |line|
+        match = /\ASUMMARY:\s*(.+)\Z/i.match(line)
+        if match
+          summary = match[1].strip
+        end
+        match = /\ACREATED:\s*(.+)\Z/i.match(line)
+        if match
+          created = DateTime.iso8601(match[1].strip)
+        end
+        match = /\ACOMPLETED:\s*(.+)\Z/i.match(line)
+        if match
+          completed = DateTime.iso8601(match[1].strip)
+        end
+      end
+      time = completed || created || defaulttime
+      year = time.strftime('%Y')
+      FileUtils.mkdir(year) unless File.exist? year
+      File.open(File.join(year, sanitize("#{time.strftime('%F')} #{summary} - #{row['uri']}")), 'wb') do |outfile|
+        outfile << row["calendardata"]
+      end
+    end
+  end
+
+  send_mail = full_autocommit
+end
+system "bundle exec ruby changemailer.rb \"#{VTODO_DIR}\"" if send_mail

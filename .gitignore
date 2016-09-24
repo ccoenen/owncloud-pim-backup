@@ -1,3 +1,4 @@
 config.yml
-contacts
-calendar
+contacts/
+calendar/
+todos/
