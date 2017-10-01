@@ -30,8 +30,8 @@ html_mail_template =<<EOT
 </head>
 <body>
   {{#changes}}
-  <div class="patch">
-    <h1>{{status}}: {{old_filename}}{{#new_filename}}<br>to {{.}}{{/new_filename}}</h1>
+  <details>
+    <summary>{{status}}: {{old_filename}}{{#new_filename}}<br>to {{.}}{{/new_filename}}</summary>
     <table class="diff">
       <tr>
         <td width="33%"><pre>{{left}}</pre></td>
@@ -39,7 +39,7 @@ html_mail_template =<<EOT
         <td width="33%"><pre>{{{patch}}}</pre></td>
       </tr>
     </table>
-  </div>
+  </details>
   {{/changes}}
 </body>
 </html>
